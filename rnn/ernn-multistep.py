@@ -9,6 +9,8 @@ from keras.layers import TimeDistributed
 from keras.layers import Dense
 from keras.layers import Flatten
 
+import matplotlib.pyplot as plt
+
 # split a multivariate sequence into samples
 def split_sequences(sequences, n_steps_in, n_steps_out):
 	X, y = list(), list()
@@ -42,6 +44,7 @@ n_steps_in, n_steps_out = 3, 2
 # covert into input/output
 X, y = split_sequences(dataset, n_steps_in, n_steps_out)
 print(X.shape, y.shape)
+
 # summarize the data
 for i in range(len(X)):
 	print(X[i], y[i])
@@ -51,17 +54,26 @@ n_features = X.shape[2]
 
 # define model (SimpleRNN)
 model = Sequential()
-model.add(SimpleRNN(100, activation='relu', return_sequences=True, input_shape=(n_steps_in, n_features)))
+model.add(SimpleRNN(300, activation='relu', return_sequences=True, input_shape=(n_steps_in, n_features)))
 model.add(TimeDistributed(Dense(n_steps_out, activation='relu')))
 model.summary()
 model.compile(optimizer='adam', loss='mse')
 # fit model
-model.fit(X, y, epochs=200, batch_size=n_steps_in, verbose=0)
+history = model.fit(X, y, epochs=200, batch_size=n_steps_in, verbose=0)
+print(history.history.keys())
+# summarize history for accuracy
+plt.plot(history.history['loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+#plt.show()
+
 # demonstrate prediction
 x_input = array([[70, 75], [80, 85], [90, 95]])
 x_input = x_input.reshape((1, n_steps_in, n_features))
-yhat = model.predict(x_input, verbose=0)
-print(yhat)
+yhat = model.predict(x_input, verbose=1)
+print(yhat.shape)
+print(yhat[0][2])
 
 # Note: Your results may vary given the stochastic nature of the algorithm or
 # evaluation procedure, or differences in numerical precision. Consider running
