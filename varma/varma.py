@@ -1,0 +1,20 @@
+
+# VARMA example
+from statsmodels.tsa.statespace.varmax import VARMAX
+from random import random
+
+# contrived dataset with dependency
+data = list()
+for i in range(100):
+    v1 = i + random()
+    v2 = v1 + random()
+    row = [v1, v2]
+    data.append(row)
+
+# fit model
+model = VARMAX(data, order=(1, 1))
+model_fit = model.fit(disp=False)
+
+# make prediction
+yhat = model_fit.forecast(steps=1)
+print(yhat)
