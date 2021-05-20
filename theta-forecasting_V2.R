@@ -1,14 +1,14 @@
 # Functions for theta forecasting - written by Dimitrios Thomakos, dimitrios.thomakos@gmail.com
 #
-#X = dataset with labelled columns, the first column is the date/time
+#dataset with labelled columns
 theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
 {
 
   #Save the variables' names  INUTILE??
-  L <- labels(dataset)
+  Lab <- labels(dataset)
   var.names <- NULL
-  for (i in 2:lenght(L[[2]])){
-	var.names <- c(var.names,L[[2]][i])
+  for (i in 1:length(Lab[[2]])){
+	var.names <- c(var.names,Lab[[2]][i])
   }
   #Save the number of variables
   Nvar <- length(var.names)
@@ -16,8 +16,8 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   #Save number of observations
   Nobs <- length(dataset[,1])
 
-  #Transform the dataset in a matrix excluding the first column with time stamp
-  X <- as.matrix(dataset[,-1])
+  #Transform the dataset in a matrix
+  X <- as.matrix(dataset)
 
   
   # Compute sample means and trends
@@ -38,7 +38,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   f02 <- mdX + f01  #aggiunge all'ultima osservazione di ogni variabile l'incremento medio di tale variabile
   f03 <- maX[Nobs,]
   # Add linear trend
-  lt.out <- lm(x1~seq(Nobs))  #seq(Nobs) genera una sequenza da 1 a Nobs, lm genera un modello di regressione lineare con la formula x1 = seq(Nobs)
+  lt.out <- lm(X[,1]~seq(Nobs))  #seq(Nobs) genera una sequenza da 1 a Nobs, lm genera un modello di regressione lineare con la formula X[,1] = seq(Nobs)
   f04 <- coefficients(lt.out)[1] + coefficients(lt.out)[2]*(Nobs+1)  #coefficients() estrae i coefficienti delle regressioni lineari
   
   # OK, now compute differences, detrending etc. and the associated forecasts
@@ -95,7 +95,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   for (i in 1:Nvar){
 	# call the optimizer
 	out <- optim(c(0.5,0.5),.opt2theta,method="L-BFGS-B",series=X[-1,i],trend=maX[-Nobs,i],lower=c(0,0),upper=c(1,1)) #funzione che trova il parametro theta che ottimizza il funzionale di costo
-	theta.DD <- out$par
+	theta.DD1 <- out$par
 	#
 	Q1 <- theta.DD1[1]*X[-1,i] + (1-theta.DD1[1])*maX[-Nobs,i]
 	Q2 <- theta.DD1[1]*diff(X[-1,i]) + (1-theta.DD1[1])*diff(maX[-Nobs,i])
@@ -110,11 +110,12 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   #
   f10 <- f11 <- f12 <- f13 <- f14 <- f15 <- NA
   #
-  if (!is.null(x2))
-  {
+
     # First the standard case
     tau <- seq(Nobs)
     # Plain in levels
+	dim(X)
+ 	dim(matrix(mdX,nrow=Nobs,ncol=Nvar,byrow=TRUE)*tau)
     S <- X-matrix(mdX,nrow=Nobs,ncol=Nvar,byrow=TRUE)*tau
     Y <- S[seq(2,Nobs,1),]
     Z <- S[seq(1,Nobs-1,1),]
@@ -128,7 +129,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
     Dall <- eigen(sqrt.iS11%*%S12%*%S22%*%t(S12)%*%sqrt.iS11)
     Beta <- sqrt.iS11%*%(Dall$vectors[,1])
     Alpha<- solve(crossprod(Z%*%Beta))%*%crossprod(Z%*%Beta,dX)
-    Theta.RR <- (Beta%*%Alpha+diag(rep(1,3)))
+    Theta.RR <- (Beta%*%Alpha+diag(rep(1,Nvar)))
     # Plain in differences
     dY <- (dX[seq(2,Nobs-1,1),]-matrix(mdX,nrow=Nobs-2,ncol=Nvar,byrow=TRUE))
     dZ <- (dX[seq(1,Nobs-2,1),]-matrix(mdX,nrow=Nobs-2,ncol=Nvar,byrow=TRUE))
@@ -151,7 +152,6 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
     f13 <- X[Nobs,]*Theta.CT + (ctX[Nobs,]%*%matrix(1,nrow=1,ncol=Nvar))*(1-Theta.CT) + mcX
     f14 <- X[Nobs,]%*%Theta.MA + maX[Nobs,]%*%(diag(rep(1,Nvar))-Theta.MA) 
     f15 <- f14 + mmX
-  }
   
   # Full return
   #if (is.null(x2))
