@@ -150,7 +150,7 @@ n_var = len(df.columns) - date_col
 # In[ ]:
 
 
-train_set = array(df.iloc[0:(len(df)-h-n_steps_in+1),date_col:len(df.columns)])
+train_set = array(df.iloc[0:(len(df)-h-n_steps_in),date_col:len(df.columns)])
 
 #Normalization
 scaler_drop = StandardScaler()
@@ -161,7 +161,7 @@ test_set_norm = scaler_drop.transform(test_set)
 
 # convert into input/output
 X_train, y_train = split_sequences(train_set_norm, n_steps_in, h)
-X_test = test_set_norm[(len(test_set_norm)-h-n_steps_in):(len(test_set_norm)-h),:]
+X_test = test_set_norm[0:(len(test_set_norm)-h),:]
 y_test = test_set_norm[(len(test_set_norm)-h):len(test_set_norm),:]
 
 
