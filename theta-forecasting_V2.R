@@ -4,7 +4,7 @@
 theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
 {
 
-  #Save the variables' names  INUTILE??
+  #Save the variables' names  
   Lab <- labels(dataset)
   var.names <- NULL
   for (i in 1:length(Lab[[2]])){
@@ -21,36 +21,36 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
 
   
   # Compute sample means and trends
-  dX  <- as.matrix(diff(X))  #converte diff(X) in una matrice, diff(X) è una matrice con gli incrementi ad ogni istante di tempo
-  mdX <- apply(dX,2,mean) #vettore riga con tanti elementi quante le colonne di dX con l'incremento medio di ogni variabile della serie
-  maX <- apply(X,2,function(zzz) {as.matrix(filter(zzz,rep(1,M)/M,method="convolution",sides=1L)) } )  #per ogni elemento di X calcola la media mobile degli ultimi M=5 elementi
+  dX  <- as.matrix(diff(X))  
+  mdX <- apply(dX,2,mean) 
+  maX <- apply(X,2,function(zzz) {as.matrix(filter(zzz,rep(1,M)/M,method="convolution",sides=1L)) } )  
   # Fill the MA values
   maX[1:(M-1),] <- X[1:(M-1),]
   rownames(maX) <- rownames(X)
-  mmX <- apply(diff(maX),2,mean)  #calcola la media degli incrementi di maX colonna
-  ctX <- as.matrix(apply(X,1,mean))  #applica la funzione mean a X per riga
+  mmX <- apply(diff(maX),2,mean)  
+  ctX <- as.matrix(apply(X,1,mean))  
   mcX <- mean(diff(ctX))
   
   # The naive, naive with drift forecasts and the SMA forecast
   # Add sample mean
   f00 <- apply(X,2,mean)
-  f01 <- X[Nobs,] #prende l'ultima riga del dataframe
-  f02 <- mdX + f01  #aggiunge all'ultima osservazione di ogni variabile l'incremento medio di tale variabile
+  f01 <- X[Nobs,] 
+  f02 <- mdX + f01  
   f03 <- maX[Nobs,]
   # Add linear trend
-  lt.out <- lm(X[,1]~seq(Nobs))  #seq(Nobs) genera una sequenza da 1 a Nobs, lm genera un modello di regressione lineare con la formula X[,1] = seq(Nobs)
-  f04 <- coefficients(lt.out)[1] + coefficients(lt.out)[2]*(Nobs+1)  #coefficients() estrae i coefficienti delle regressioni lineari
+  lt.out <- lm(X[,1]~seq(Nobs))  
+  f04 <- coefficients(lt.out)[1] + coefficients(lt.out)[2]*(Nobs+1)  
   
   # OK, now compute differences, detrending etc. and the associated forecasts
   #
   # A simple function to get the optimal theta for the standard case
-  .opt.theta <- function(.dX)  #definisce la funzione .opt.theta nella variabile .dX
+  .opt.theta <- function(.dX) 
   {
     Nn <- NROW(.dX)
     mu <- mean(.dX)
-    dY <- (.dX[seq(2,Nn,1)]-mu) #seq(a,b,c) genera una sequenza nell'intervallo [a;b] con passo c 
+    dY <- (.dX[seq(2,Nn,1)]-mu) 
     dZ <- (.dX[seq(1,Nn-1,1)]-mu)
-    rho <- coefficients(lm(dY~dZ-1))  #restituisce i coefficienti della regrressione lineare con equazione dY=dZ-1
+    rho <- coefficients(lm(dY~dZ-1))  
   }
   # Get the univariate theta for the standard case
   theta.D <- apply(dX,2,.opt.theta)
@@ -86,7 +86,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   {
     Q1 <- par[1]*series + (1-par[1])*trend
     Q2 <- par[1]*diff(series) + (1-par[1])*diff(trend)
-    FQ <- Q1[-1] + par[2]*Q2 + (1-par[2])*mean(diff(trend),na.rm=TRUE) #Q1[-1] = tutti gli elementi escluso il primo
+    FQ <- Q1[-1] + par[2]*Q2 + (1-par[2])*mean(diff(trend),na.rm=TRUE) 
     uu <- series[-1]-FQ
     SS <- mean(uu^2,na.rm=TRUE)
     return(SS)
@@ -94,7 +94,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
   f9 <- NULL
   for (i in 1:Nvar){
 	# call the optimizer
-	out <- optim(c(0.5,0.5),.opt2theta,method="L-BFGS-B",series=X[-1,i],trend=maX[-Nobs,i],lower=c(0,0),upper=c(1,1)) #funzione che trova il parametro theta che ottimizza il funzionale di costo
+	out <- optim(c(0.5,0.5),.opt2theta,method="L-BFGS-B",series=X[-1,i],trend=maX[-Nobs,i],lower=c(0,0),upper=c(1,1)) 
 	theta.DD1 <- out$par
 	#
 	Q1 <- theta.DD1[1]*X[-1,i] + (1-theta.DD1[1])*maX[-Nobs,i]
@@ -125,7 +125,7 @@ theta.forecasting <- function(dataset,M=5,has.dates=TRUE,lambda=1)
     S12 <- crossprod(Z,dX)
     S22 <- crossprod(dX)
     D11 <- eigen(solve(S11))
-    sqrt.iS11 <- (D11$vectors)%*%sqrt(diag(D11$values))%*%(t(D11$vectors))   #%*% moltiplicazione matriciale
+    sqrt.iS11 <- (D11$vectors)%*%sqrt(diag(D11$values))%*%(t(D11$vectors))   
     Dall <- eigen(sqrt.iS11%*%S12%*%S22%*%t(S12)%*%sqrt.iS11)
     Beta <- sqrt.iS11%*%(Dall$vectors[,1])
     Alpha<- solve(crossprod(Z%*%Beta))%*%crossprod(Z%*%Beta,dX)
